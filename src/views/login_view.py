@@ -7,7 +7,7 @@ class LoginView(ft.Container):
         super().__init__()
         self.main_page = page
         self.on_login_success = on_login_success
-        self.alignment = ft.alignment.center
+        self.alignment = ft.Alignment(0, 0)
         self.expand = True
 
         self.username_input = ft.TextField(label="Usuário", width=300)
