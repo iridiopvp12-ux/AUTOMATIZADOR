@@ -48,7 +48,7 @@ def main(page: ft.Page):
         if selected_label == "Dashboard":
             page_content.content = DashboardView()
         elif selected_label == "Admin":
-            page_content.content = AdminView()
+            page_content.content = AdminView(page)
         elif selected_label == "SPED":
             page_content.content = SpedView()
         elif selected_label == "Configurações":
@@ -116,7 +116,7 @@ def main(page: ft.Page):
             if first_label == "Dashboard":
                 page_content.content = DashboardView()
             elif first_label == "Admin":
-                page_content.content = AdminView()
+                page_content.content = AdminView(page)
             elif first_label == "SPED":
                 page_content.content = SpedView()
             elif first_label == "Configurações":
