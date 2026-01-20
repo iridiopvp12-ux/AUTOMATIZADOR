@@ -20,10 +20,10 @@ class AdminView(ft.Column):
         self.controls = [
             ft.Row([
                 ft.Text("Gerenciamento de Usuários", size=24, weight="bold"),
-                ft.IconButton(ft.icons.REFRESH, on_click=self.refresh_users)
+                ft.IconButton(ft.Icons.REFRESH, on_click=self.refresh_users)
             ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
             ft.Divider(),
-            ft.ElevatedButton("Criar Novo Usuário", icon=ft.icons.ADD, on_click=self.open_create_dialog),
+            ft.ElevatedButton("Criar Novo Usuário", icon=ft.Icons.ADD, on_click=self.open_create_dialog),
             ft.Container(height=20),
             self.users_table
         ]
@@ -67,7 +67,7 @@ class AdminView(ft.Column):
             ft.DataRow(cells=[
                 ft.DataCell(ft.Text(str(r[0]))),
                 ft.DataCell(ft.Text(r[1])),
-                ft.DataCell(ft.Icon(ft.icons.CHECK if r[2] else ft.icons.CLOSE, color="green" if r[2] else "red")),
+                ft.DataCell(ft.Icon(ft.Icons.CHECK if r[2] else ft.Icons.CLOSE, color="green" if r[2] else "red")),
                 ft.DataCell(ft.Text(r[3] if r[3] else "-")),
             ]) for r in rows
         ]

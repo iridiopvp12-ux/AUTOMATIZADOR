@@ -7,9 +7,9 @@ class DashboardView(ft.Column):
             ft.Text("Dashboard", size=30, weight="bold"),
             ft.Divider(),
             ft.Row([
-                self.build_stat_card("Clientes Ativos", "120", ft.icons.PEOPLE),
-                self.build_stat_card("Processos Pendentes", "15", ft.icons.PENDING_ACTIONS, "orange"),
-                self.build_stat_card("Processos Concluídos", "1050", ft.icons.CHECK_CIRCLE, "green"),
+                self.build_stat_card("Clientes Ativos", "120", ft.Icons.PEOPLE),
+                self.build_stat_card("Processos Pendentes", "15", ft.Icons.PENDING_ACTIONS, "orange"),
+                self.build_stat_card("Processos Concluídos", "1050", ft.Icons.CHECK_CIRCLE, "green"),
             ], wrap=True, spacing=20)
         ]
 

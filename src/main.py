@@ -86,19 +86,19 @@ def main(page: ft.Page):
 
         # 1. Dashboard
         if has_perm("dashboard"):
-            dests.append(get_destination(ft.icons.DASHBOARD_OUTLINED, "Dashboard", ft.icons.DASHBOARD))
+            dests.append(get_destination(ft.Icons.DASHBOARD_OUTLINED, "Dashboard", ft.Icons.DASHBOARD))
 
         # 2. Admin (Only is_admin)
         if is_admin:
-            dests.append(get_destination(ft.icons.ADMIN_PANEL_SETTINGS_OUTLINED, "Admin", ft.icons.ADMIN_PANEL_SETTINGS))
+            dests.append(get_destination(ft.Icons.ADMIN_PANEL_SETTINGS_OUTLINED, "Admin", ft.Icons.ADMIN_PANEL_SETTINGS))
 
         # 3. SPED
         if has_perm("sped"):
-            dests.append(get_destination(ft.icons.DESCRIPTION_OUTLINED, "SPED", ft.icons.DESCRIPTION))
+            dests.append(get_destination(ft.Icons.DESCRIPTION_OUTLINED, "SPED", ft.Icons.DESCRIPTION))
 
         # 4. Settings
         if has_perm("settings"):
-            dests.append(get_destination(ft.icons.SETTINGS_OUTLINED, "Configurações", ft.icons.SETTINGS))
+            dests.append(get_destination(ft.Icons.SETTINGS_OUTLINED, "Configurações", ft.Icons.SETTINGS))
 
         rail.destinations = dests
         if dests:
@@ -108,7 +108,7 @@ def main(page: ft.Page):
         # Flet NavigationRail has trailing, but it's typically for action button.
         # We'll put logout in trailing or leading.
 
-        rail.trailing = ft.IconButton(ft.icons.LOGOUT, on_click=logout, tooltip="Sair")
+        rail.trailing = ft.IconButton(ft.Icons.LOGOUT, on_click=logout, tooltip="Sair")
 
         # Initial view
         if dests:
