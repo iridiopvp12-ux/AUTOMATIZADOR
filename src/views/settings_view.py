@@ -7,12 +7,12 @@ class SettingsView(ft.Column):
             ft.Text("Configurações", size=30, weight="bold"),
             ft.Divider(),
             ft.ListTile(
-                leading=ft.Icon(ft.icons.DARK_MODE),
+                leading=ft.Icon(ft.Icons.DARK_MODE),
                 title=ft.Text("Tema Escuro"),
                 trailing=ft.Switch(value=False, on_change=lambda e: print("Theme toggle"))
             ),
             ft.ListTile(
-                leading=ft.Icon(ft.icons.LANGUAGE),
+                leading=ft.Icon(ft.Icons.LANGUAGE),
                 title=ft.Text("Idioma"),
                 subtitle=ft.Text("Português (Brasil)")
             )

@@ -14,7 +14,7 @@ class SpedView(ft.Column):
                     ft.Container(height=20),
                     ft.ElevatedButton(
                         "Iniciar Leitura SPED",
-                        icon=ft.icons.UPLOAD_FILE,
+                        icon=ft.Icons.UPLOAD_FILE,
                         on_click=lambda e: print("Feature not implemented yet")
                     )
                 ])
