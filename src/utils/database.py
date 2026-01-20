@@ -65,6 +65,14 @@ def verify_password(stored_hash, password):
     """
     return bcrypt.checkpw(password.encode('utf-8'), stored_hash)
 
+def get_total_users():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT COUNT(*) FROM users')
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
 def initialize_db():
     create_tables()
     # Check if admin exists
