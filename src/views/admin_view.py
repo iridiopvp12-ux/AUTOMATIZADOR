@@ -80,15 +80,21 @@ class AdminView(ft.Column):
         self.perm_dashboard.value = True
         self.perm_sped.value = False
         self.perm_settings.value = False
-        self.page.dialog = self.create_dialog
-        self.create_dialog.open = True
-        self.page.update()
+        # Use page property from control (available after mount)
+        if self.page:
+            self.page.dialog = self.create_dialog
+            self.create_dialog.open = True
+            self.page.update()
 
     def close_dialog(self, e):
         self.create_dialog.open = False
-        self.page.update()
+        if self.page:
+            self.page.update()
 
     def save_user(self, e):
+        if not self.page:
+            return
+
         if not self.new_username.value or not self.new_password.value:
             self.page.snack_bar = ft.SnackBar(ft.Text("Preencha usuário e senha!"))
             self.page.snack_bar.open = True

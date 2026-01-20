@@ -5,7 +5,7 @@ from src.utils.logger import start_session_log, log_action
 class LoginView(ft.Container):
     def __init__(self, page: ft.Page, on_login_success):
         super().__init__()
-        self.page = page
+        self.main_page = page
         self.on_login_success = on_login_success
         self.alignment = ft.alignment.center
         self.expand = True
