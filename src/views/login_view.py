@@ -31,7 +31,7 @@ class LoginView(ft.Container):
                                 self.password_input,
                                 self.error_text,
                                 ft.ElevatedButton(
-                                    text="Entrar",
+                                    "Entrar",
                                     width=300,
                                     style=ft.ButtonStyle(
                                         padding=20,
