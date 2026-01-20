@@ -141,4 +141,4 @@ def main(page: ft.Page):
     page.add(LoginView(page, on_login_success))
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.app(main)
