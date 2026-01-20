@@ -52,7 +52,7 @@ def main(page: ft.Page):
         elif selected_label == "SPED":
             page_content.content = SpedView()
         elif selected_label == "Configurações":
-            page_content.content = SettingsView()
+            page_content.content = SettingsView(page)
 
         page_content.update()
 
@@ -120,7 +120,7 @@ def main(page: ft.Page):
             elif first_label == "SPED":
                 page_content.content = SpedView()
             elif first_label == "Configurações":
-                page_content.content = SettingsView()
+                page_content.content = SettingsView(page)
         else:
             page_content.content = ft.Text("Sem permissões de acesso.")
 
