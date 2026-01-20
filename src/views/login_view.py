@@ -25,8 +25,8 @@ class LoginView(ft.Container):
                             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                             spacing=20,
                             controls=[
-                                ft.Text("Contabilidade System", size=24, weight="bold", color=ft.colors.PRIMARY),
-                                ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=64, color=ft.colors.PRIMARY),
+                                ft.Text("Contabilidade System", size=24, weight="bold", color=ft.Colors.PRIMARY),
+                                ft.Icon(ft.icons.ACCOUNT_CIRCLE, size=64, color=ft.Colors.PRIMARY),
                                 self.username_input,
                                 self.password_input,
                                 self.error_text,
