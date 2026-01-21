@@ -1,4 +1,7 @@
 import flet as ft
+import os
+from src.utils.sped_parser import process_sped_file
+from src.utils.report_generator import generate_fiscal_report
 
 class SpedView(ft.Column):
     def __init__(self, page: ft.Page):
@@ -14,7 +17,17 @@ class SpedView(ft.Column):
         self.tabs_row = ft.Row(scroll=ft.ScrollMode.AUTO)
         self.content_area = ft.Container(expand=True, padding=20)
 
+        # FilePicker
+        self.file_picker = ft.FilePicker(on_result=self.on_file_result)
+        # We need to add file picker to the page overlay in did_mount or passing it to page
+        # Since SpedView is added to page content, we can try to add it to self.controls?
+        # No, FilePicker must be in page.overlay.
+        # But we can add it to controls and it works in recent Flet versions as invisible control?
+        # Best practice: add to page.overlay. Since we have self.page_instance, we can do it if mounted.
+        # But safely, we can add it to the view's controls and Flet handles it.
+
         self.controls = [
+            self.file_picker, # Add picker to visual tree (invisible)
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -159,6 +172,9 @@ class SpedView(ft.Column):
         self.switch_tab(target_label)
 
     def create_sped_contribuicoes_content(self):
+        # We need a reference to the log area to update it
+        self.sped_status_text = ft.Text("Aguardando arquivo...", color=ft.Colors.GREY)
+
         return ft.Column(
             controls=[
                 ft.Text("SPED Contribuições", size=24, weight=ft.FontWeight.BOLD),
@@ -168,18 +184,69 @@ class SpedView(ft.Column):
                         ft.ElevatedButton(
                             "Enviar Arquivos",
                             icon=ft.Icons.UPLOAD_FILE,
-                            on_click=lambda _: print("Enviar Arquivos clicked")
+                            on_click=lambda _: self.file_picker.pick_files(
+                                allow_multiple=False,
+                                allowed_extensions=["txt"]
+                            )
                         ),
-                        ft.ElevatedButton(
-                            "Gerar Relatório",
-                            icon=ft.Icons.ASSESSMENT,
-                            on_click=lambda _: print("Gerar Relatório clicked")
-                        )
+                        # Placeholder for future report generation if separate
+                        # ft.ElevatedButton(
+                        #     "Gerar Relatório",
+                        #     icon=ft.Icons.ASSESSMENT,
+                        #     on_click=lambda _: print("Gerar Relatório clicked")
+                        # )
                     ]
                 ),
                 ft.Container(
                     margin=ft.margin.only(top=20),
-                    content=ft.Text("Área de logs ou status aparecerá aqui...", color=ft.Colors.GREY)
+                    padding=10,
+                    bgcolor=ft.Colors.GREY_100,
+                    border_radius=5,
+                    content=ft.Column([
+                        ft.Text("Log de Processamento:", weight="bold"),
+                        self.sped_status_text
+                    ])
                 )
             ]
         )
+
+    def on_file_result(self, e: ft.FilePickerResultEvent):
+        if not e.files:
+            return
+
+        filepath = e.files[0].path
+        filename = e.files[0].name
+
+        self.sped_status_text.value = f"Processando arquivo: {filename}..."
+        self.sped_status_text.update()
+
+        try:
+            # 1. Parse
+            df = process_sped_file(filepath)
+
+            if df is None or df.empty:
+                 self.sped_status_text.value = "Erro: Nenhum dado relevante encontrado ou falha ao ler arquivo."
+                 self.sped_status_text.color = ft.Colors.RED
+                 self.sped_status_text.update()
+                 return
+
+            # 2. Generate Report
+            # Output in same folder, name consolidated
+            output_dir = os.path.dirname(filepath)
+            output_name = f"RELATORIO_{os.path.splitext(filename)[0]}.xlsx"
+            output_path = os.path.join(output_dir, output_name)
+
+            success = generate_fiscal_report(df, output_path)
+
+            if success:
+                self.sped_status_text.value = f"Sucesso! Relatório salvo em:\n{output_path}"
+                self.sped_status_text.color = ft.Colors.GREEN
+            else:
+                self.sped_status_text.value = "Erro ao gerar planilha Excel."
+                self.sped_status_text.color = ft.Colors.RED
+
+        except Exception as ex:
+             self.sped_status_text.value = f"Erro inesperado: {str(ex)}"
+             self.sped_status_text.color = ft.Colors.RED
+
+        self.sped_status_text.update()
