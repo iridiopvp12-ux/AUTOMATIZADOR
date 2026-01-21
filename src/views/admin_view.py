@@ -2,8 +2,9 @@ import flet as ft
 from src.utils.database import create_user, get_connection, log_action
 
 class AdminView(ft.Column):
-    def __init__(self):
+    def __init__(self, page: ft.Page):
         super().__init__()
+        self.main_page = page
         self.expand = True
         self.scroll = ft.ScrollMode.AUTO
 
@@ -80,25 +81,20 @@ class AdminView(ft.Column):
         self.perm_dashboard.value = True
         self.perm_sped.value = False
         self.perm_settings.value = False
-        # Use page property from control (available after mount)
-        if self.page:
-            self.page.dialog = self.create_dialog
-            self.create_dialog.open = True
-            self.page.update()
+
+        self.main_page.dialog = self.create_dialog
+        self.create_dialog.open = True
+        self.main_page.update()
 
     def close_dialog(self, e):
         self.create_dialog.open = False
-        if self.page:
-            self.page.update()
+        self.main_page.update()
 
     def save_user(self, e):
-        if not self.page:
-            return
-
         if not self.new_username.value or not self.new_password.value:
-            self.page.snack_bar = ft.SnackBar(ft.Text("Preencha usuário e senha!"))
-            self.page.snack_bar.open = True
-            self.page.update()
+            self.main_page.snack_bar = ft.SnackBar(ft.Text("Preencha usuário e senha!"))
+            self.main_page.snack_bar.open = True
+            self.main_page.update()
             return
 
         perms = []
@@ -119,9 +115,9 @@ class AdminView(ft.Column):
             log_action(f"Admin created new user: {self.new_username.value}")
             self.close_dialog(None)
             self.refresh_users(None)
-            self.page.snack_bar = ft.SnackBar(ft.Text("Usuário criado com sucesso!"))
+            self.main_page.snack_bar = ft.SnackBar(ft.Text("Usuário criado com sucesso!"))
         else:
-            self.page.snack_bar = ft.SnackBar(ft.Text("Erro: Usuário já existe!"))
+            self.main_page.snack_bar = ft.SnackBar(ft.Text("Erro: Usuário já existe!"))
 
-        self.page.snack_bar.open = True
-        self.page.update()
+        self.main_page.snack_bar.open = True
+        self.main_page.update()
