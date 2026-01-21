@@ -17,14 +17,8 @@ class SpedView(ft.Column):
         self.tabs_row = ft.Row(scroll=ft.ScrollMode.AUTO)
         self.content_area = ft.Container(expand=True, padding=20)
 
-        # FilePicker
-        self.file_picker = ft.FilePicker(on_result=self.on_file_result)
-        # We need to add file picker to the page overlay in did_mount or passing it to page
-        # Since SpedView is added to page content, we can try to add it to self.controls?
-        # No, FilePicker must be in page.overlay.
-        # But we can add it to controls and it works in recent Flet versions as invisible control?
-        # Best practice: add to page.overlay. Since we have self.page_instance, we can do it if mounted.
-        # But safely, we can add it to the view's controls and Flet handles it.
+        # FilePicker - Removed on_result arg as it is not supported in this version's init
+        self.file_picker = ft.FilePicker()
 
         self.controls = [
             self.file_picker, # Add picker to visual tree (invisible)
@@ -184,17 +178,8 @@ class SpedView(ft.Column):
                         ft.ElevatedButton(
                             "Enviar Arquivos",
                             icon=ft.Icons.UPLOAD_FILE,
-                            on_click=lambda _: self.file_picker.pick_files(
-                                allow_multiple=False,
-                                allowed_extensions=["txt"]
-                            )
+                            on_click=self.pick_file_and_process
                         ),
-                        # Placeholder for future report generation if separate
-                        # ft.ElevatedButton(
-                        #     "Gerar Relatório",
-                        #     icon=ft.Icons.ASSESSMENT,
-                        #     on_click=lambda _: print("Gerar Relatório clicked")
-                        # )
                     ]
                 ),
                 ft.Container(
@@ -210,12 +195,23 @@ class SpedView(ft.Column):
             ]
         )
 
-    def on_file_result(self, e: ft.FilePickerResultEvent):
-        if not e.files:
-            return
+    async def pick_file_and_process(self, e):
+        """
+        Async handler for file picking and processing.
+        """
+        # 1. Pick Files
+        result = await self.file_picker.pick_files(
+            allow_multiple=False,
+            allowed_extensions=["txt"]
+        )
 
-        filepath = e.files[0].path
-        filename = e.files[0].name
+        # 2. Process Files if any selected
+        if result and result.files:
+            self.process_selected_file(result.files[0])
+
+    def process_selected_file(self, file_obj):
+        filepath = file_obj.path
+        filename = file_obj.name
 
         self.sped_status_text.value = f"Processando arquivo: {filename}..."
         self.sped_status_text.update()
