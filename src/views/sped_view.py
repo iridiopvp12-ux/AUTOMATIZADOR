@@ -7,7 +7,8 @@ class SpedView(ft.Column):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.page_instance = page
-        self.file_picker = ft.FilePicker(on_result=self.on_file_result)
+        self.file_picker = ft.FilePicker()
+        self.file_picker.on_result = self.on_file_result
         self.file_picker.visible = False
         self.expand = True
 
