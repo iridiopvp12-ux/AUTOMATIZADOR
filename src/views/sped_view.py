@@ -19,6 +19,7 @@ class SpedView(ft.Column):
         self.content_area = ft.Container(expand=True, padding=20)
 
         self.controls = [
+            self.file_picker,  # Add file_picker directly to controls tree
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -37,13 +38,10 @@ class SpedView(ft.Column):
         self.set_content("Menu")
 
     def did_mount(self):
-        self.page_instance.overlay.append(self.file_picker)
-        self.page_instance.update()
+        pass
 
     def will_unmount(self):
-        if self.file_picker in self.page_instance.overlay:
-            self.page_instance.overlay.remove(self.file_picker)
-            self.page_instance.update()
+        pass
 
     def init_menu(self):
         menu_content = ft.Column(
