@@ -4,9 +4,10 @@ from src.utils.sped_parser import process_sped_file
 from src.utils.report_generator import generate_fiscal_report
 
 class SpedView(ft.Column):
-    def __init__(self, page: ft.Page):
+    def __init__(self, page: ft.Page, file_picker: ft.FilePicker):
         super().__init__()
         self.page_instance = page
+        self.file_picker = file_picker
         self.expand = True
 
         # State
@@ -17,11 +18,7 @@ class SpedView(ft.Column):
         self.tabs_row = ft.Row(scroll=ft.ScrollMode.AUTO)
         self.content_area = ft.Container(expand=True, padding=20)
 
-        # FilePicker
-        self.file_picker = ft.FilePicker()
-
         self.controls = [
-            # Removed self.file_picker from here to avoid "Unknown control" error
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -38,18 +35,6 @@ class SpedView(ft.Column):
         # Render initial state
         self.render_tabs()
         self.set_content("Menu")
-
-    def did_mount(self):
-        # Add FilePicker to page overlay when view is mounted
-        if self.page_instance:
-            self.page_instance.overlay.append(self.file_picker)
-            self.page_instance.update()
-
-    def will_unmount(self):
-        # Remove FilePicker from page overlay when view is unmounted
-        if self.page_instance and self.file_picker in self.page_instance.overlay:
-            self.page_instance.overlay.remove(self.file_picker)
-            self.page_instance.update()
 
     def init_menu(self):
         menu_content = ft.Column(

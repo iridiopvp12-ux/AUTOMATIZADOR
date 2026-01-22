@@ -18,6 +18,10 @@ def main(page: ft.Page):
     # Initialize DB (creates admin if needed)
     initialize_db()
 
+    # Shared Services
+    file_picker = ft.FilePicker()
+    page.overlay.append(file_picker)
+
     # State variables
     current_user = None
 
@@ -50,7 +54,7 @@ def main(page: ft.Page):
         elif selected_label == "Admin":
             page_content.content = AdminView(page)
         elif selected_label == "SPED":
-            page_content.content = SpedView(page)
+            page_content.content = SpedView(page, file_picker)
         elif selected_label == "Configurações":
             page_content.content = SettingsView(page)
 
@@ -118,7 +122,7 @@ def main(page: ft.Page):
             elif first_label == "Admin":
                 page_content.content = AdminView(page)
             elif first_label == "SPED":
-                page_content.content = SpedView(page)
+                page_content.content = SpedView(page, file_picker)
             elif first_label == "Configurações":
                 page_content.content = SettingsView(page)
         else:
