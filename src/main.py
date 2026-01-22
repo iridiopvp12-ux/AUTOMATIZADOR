@@ -20,7 +20,6 @@ def main(page: ft.Page):
 
     # Shared Services
     file_picker = ft.FilePicker()
-    file_picker.visible = False
     page.overlay.append(file_picker)
 
     # State variables
