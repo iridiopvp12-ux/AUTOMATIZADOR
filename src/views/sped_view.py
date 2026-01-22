@@ -17,11 +17,11 @@ class SpedView(ft.Column):
         self.tabs_row = ft.Row(scroll=ft.ScrollMode.AUTO)
         self.content_area = ft.Container(expand=True, padding=20)
 
-        # FilePicker - Removed on_result arg as it is not supported in this version's init
+        # FilePicker
         self.file_picker = ft.FilePicker()
 
         self.controls = [
-            self.file_picker, # Add picker to visual tree (invisible)
+            # Removed self.file_picker from here to avoid "Unknown control" error
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -38,6 +38,18 @@ class SpedView(ft.Column):
         # Render initial state
         self.render_tabs()
         self.set_content("Menu")
+
+    def did_mount(self):
+        # Add FilePicker to page overlay when view is mounted
+        if self.page_instance:
+            self.page_instance.overlay.append(self.file_picker)
+            self.page_instance.update()
+
+    def will_unmount(self):
+        # Remove FilePicker from page overlay when view is unmounted
+        if self.page_instance and self.file_picker in self.page_instance.overlay:
+            self.page_instance.overlay.remove(self.file_picker)
+            self.page_instance.update()
 
     def init_menu(self):
         menu_content = ft.Column(
@@ -200,14 +212,22 @@ class SpedView(ft.Column):
         Async handler for file picking and processing.
         """
         # 1. Pick Files
-        result = await self.file_picker.pick_files(
-            allow_multiple=False,
-            allowed_extensions=["txt"]
-        )
+        # Note: FilePicker must be in page overlay to work.
+        try:
+            result = await self.file_picker.pick_files(
+                allow_multiple=False,
+                allowed_extensions=["txt"]
+            )
 
-        # 2. Process Files if any selected
-        if result and result.files:
-            self.process_selected_file(result.files[0])
+            # 2. Process Files if any selected
+            if result and result.files:
+                self.process_selected_file(result.files[0])
+        except Exception as ex:
+             # Just in case pick_files fails (e.g. not added to page yet)
+             print(f"Error picking file: {ex}")
+             self.sped_status_text.value = f"Erro ao abrir seletor de arquivos: {ex}"
+             self.sped_status_text.color = ft.Colors.RED
+             self.sped_status_text.update()
 
     def process_selected_file(self, file_obj):
         filepath = file_obj.path
