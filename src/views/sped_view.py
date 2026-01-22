@@ -7,7 +7,8 @@ class SpedView(ft.Column):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.page_instance = page
-        # self.file_picker = ft.FilePicker() # Temporarily disabled due to client error
+        self.file_picker = ft.FilePicker(on_result=self.on_file_result)
+        self.file_picker.visible = False
         self.expand = True
 
         # State
@@ -19,7 +20,7 @@ class SpedView(ft.Column):
         self.content_area = ft.Container(expand=True, padding=20)
 
         self.controls = [
-            # self.file_picker,  # Add file_picker directly to controls tree
+            self.file_picker,
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -172,7 +173,7 @@ class SpedView(ft.Column):
     def create_sped_contribuicoes_content(self):
         # We need a reference to the log area to update it
         self.sped_status_text = ft.Text("Aguardando arquivo...", color=ft.Colors.GREY)
-        self.file_path_input = ft.TextField(label="Caminho do arquivo SPED (.txt)", width=500)
+        self.file_path_input = ft.TextField(label="Caminho do arquivo", width=400, read_only=False)
 
         return ft.Column(
             controls=[
@@ -181,8 +182,13 @@ class SpedView(ft.Column):
                 ft.Row(
                     controls=[
                         self.file_path_input,
+                        ft.IconButton(
+                            icon=ft.Icons.FOLDER_OPEN,
+                            tooltip="Selecionar Arquivo",
+                            on_click=lambda _: self.file_picker.pick_files(allow_multiple=False, allowed_extensions=["txt"])
+                        ),
                         ft.ElevatedButton(
-                            "Processar Arquivo",
+                            "Processar",
                             icon=ft.Icons.PLAY_ARROW,
                             on_click=self.process_manual_file
                         ),
@@ -217,6 +223,15 @@ class SpedView(ft.Column):
 
         filename = os.path.basename(filepath)
         self.process_file_action(filepath, filename)
+
+    def on_file_result(self, e: ft.FilePickerResultEvent):
+        if e.files and len(e.files) > 0:
+            file_obj = e.files[0]
+            self.file_path_input.value = file_obj.path
+            self.file_path_input.update()
+            self.sped_status_text.value = f"Arquivo selecionado: {file_obj.name}"
+            self.sped_status_text.color = ft.Colors.BLACK
+            self.sped_status_text.update()
 
     def process_file_action(self, filepath, filename):
         self.sped_status_text.value = f"Processando arquivo: {filename}..."
