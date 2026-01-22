@@ -14,79 +14,74 @@ def generate_fiscal_report(df: pd.DataFrame, output_path: str):
     ws = wb.active
     ws.title = "Consolidação CST_CFOP"
 
-    # Headers
-    headers_top = [
-        "Bloco", "CFOP", "CST",
-        "PIS/PASEP", "", "", "", # Group Header
-        "COFINS", "", "", ""     # Group Header
-    ]
-
-    headers_sub = [
-        "", "", "", # Bloco, CFOP, CST (Merged usually or repeated)
-        "Base de Cálculo", "Alíquota (%)", "Valor", "CST", # PIS fields (CST PIS is usually same as main CST or separate?)
-                                                           # Wait, the image showed one CST column for PIS and one for COFINS.
-                                                           # My DF has CST_PIS and CST_COFINS.
-                                                           # The image shows "CST" column for PIS section, and "CST" for COFINS section.
-                                                           # Wait, looking at image:
-                                                           # Col 1: Bloco, Col 2: CFOP, Col 3: CST (PIS?), Col 4: Base PIS...
-                                                           # Col 8: CST (COFINS?), Col 9: Base COFINS...
-        "Base de Cálculo", "Alíquota (%)", "Valor"
-    ]
-
-    # We need to map our DF columns to this layout
-    # DF Columns: Bloco, CFOP, CST_PIS, Base_PIS, Aliq_PIS, Valor_PIS, CST_COFINS, Base_COFINS, Aliq_COFINS, Valor_COFINS
-
-    # Write Main Header (Row 1) - Title?
-    ws.merge_cells('A1:K1')
+    # Write Main Header (Row 1)
+    ws.merge_cells('A1:M1')
     ws['A1'] = "REGISTROS FISCAIS - CONSOLIDAÇÃO DAS OPERAÇÕES POR BLOCO, CFOP E CST"
     ws['A1'].font = Font(bold=True, size=12)
     ws['A1'].alignment = Alignment(horizontal='center')
 
-    # Write Group Headers (Row 3 - assuming row 2 has company info like image, skipping for simplicity or adding placeholders)
-    # Let's start table at Row 3
-
-    # Merging for PIS/PASEP and COFINS headers
-    # PIS: Cols D, E, F, G (CST, Base, Aliq, Val)?
-    # Image: Col 3 is CST. Then Base, Aliq, Qty, Aliq_Reais, Valor.
-    # My parser extracts CST, Base, Aliq_Perc, Valor.
-    # So I will adapt columns:
+    # Column Mapping:
     # A: Bloco
     # B: CFOP
-    # C: CST (PIS)
-    # D: Base PIS
-    # E: Aliq PIS
-    # F: Valor PIS
-    # G: CST (COFINS)
-    # H: Base COFINS
-    # I: Aliq COFINS
-    # J: Valor COFINS
+    # C: Valor Item
+    # D: Valor ICMS
+    # E: Valor IPI
+    # F: CST (PIS)
+    # G: Base PIS
+    # H: Aliq PIS
+    # I: Valor PIS
+    # J: CST (COFINS)
+    # K: Base COFINS
+    # L: Aliq COFINS
+    # M: Valor COFINS
 
-    ws.merge_cells('C2:F2')
-    ws['C2'] = "PIS/PASEP"
-    ws['C2'].alignment = Alignment(horizontal='center')
+    # PIS Header: F, G, H, I
+    ws.merge_cells('F2:I2')
+    ws['F2'] = "PIS/PASEP"
+    ws['F2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['F2'].font = Font(bold=True)
 
-    ws.merge_cells('G2:J2')
-    ws['G2'] = "COFINS"
-    ws['G2'].alignment = Alignment(horizontal='center')
+    # COFINS Header: J, K, L, M
+    ws.merge_cells('J2:M2')
+    ws['J2'] = "COFINS"
+    ws['J2'].alignment = Alignment(horizontal='center', vertical='center')
+    ws['J2'].font = Font(bold=True)
 
     # Sub Headers (Row 3)
-    cols = ["Bloco", "CFOP", "CST", "Base Calc", "Aliq %", "Valor", "CST", "Base Calc", "Aliq %", "Valor"]
+    cols = [
+        "Bloco", "CFOP", "Vl Contábil", "Vl ICMS", "Vl IPI",
+        "CST", "Base Calc", "Aliq %", "Valor",
+        "CST", "Base Calc", "Aliq %", "Valor"
+    ]
     for i, col in enumerate(cols):
-        ws.cell(row=3, column=i+1, value=col).font = Font(bold=True)
+        cell = ws.cell(row=3, column=i+1, value=col)
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal='center')
+        # Add border
+        cell.border = Border(bottom=Side(style='thin'))
 
     # Data (Row 4+)
     for r_idx, row in df.iterrows():
+        # A - B
         ws.cell(row=r_idx+4, column=1, value=row['Bloco'])
         ws.cell(row=r_idx+4, column=2, value=row['CFOP'])
-        ws.cell(row=r_idx+4, column=3, value=row['CST_PIS'])
-        ws.cell(row=r_idx+4, column=4, value=row['Base_PIS']).number_format = '#,##0.00'
-        ws.cell(row=r_idx+4, column=5, value=row['Aliq_PIS']).number_format = '0.00'
-        ws.cell(row=r_idx+4, column=6, value=row['Valor_PIS']).number_format = '#,##0.00'
 
-        ws.cell(row=r_idx+4, column=7, value=row['CST_COFINS'])
-        ws.cell(row=r_idx+4, column=8, value=row['Base_COFINS']).number_format = '#,##0.00'
-        ws.cell(row=r_idx+4, column=9, value=row['Aliq_COFINS']).number_format = '0.00'
-        ws.cell(row=r_idx+4, column=10, value=row['Valor_COFINS']).number_format = '#,##0.00'
+        # C - E (Values)
+        ws.cell(row=r_idx+4, column=3, value=row['Valor_Item']).number_format = '#,##0.00'
+        ws.cell(row=r_idx+4, column=4, value=row['Valor_ICMS']).number_format = '#,##0.00'
+        ws.cell(row=r_idx+4, column=5, value=row['Valor_IPI']).number_format = '#,##0.00'
+
+        # F - I (PIS)
+        ws.cell(row=r_idx+4, column=6, value=row['CST_PIS'])
+        ws.cell(row=r_idx+4, column=7, value=row['Base_PIS']).number_format = '#,##0.00'
+        ws.cell(row=r_idx+4, column=8, value=row['Aliq_PIS']).number_format = '0.00'
+        ws.cell(row=r_idx+4, column=9, value=row['Valor_PIS']).number_format = '#,##0.00'
+
+        # J - M (COFINS)
+        ws.cell(row=r_idx+4, column=10, value=row['CST_COFINS'])
+        ws.cell(row=r_idx+4, column=11, value=row['Base_COFINS']).number_format = '#,##0.00'
+        ws.cell(row=r_idx+4, column=12, value=row['Aliq_COFINS']).number_format = '0.00'
+        ws.cell(row=r_idx+4, column=13, value=row['Valor_COFINS']).number_format = '#,##0.00'
 
     # Auto-adjust column widths
     from openpyxl.utils import get_column_letter
