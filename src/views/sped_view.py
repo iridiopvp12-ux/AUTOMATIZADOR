@@ -7,7 +7,7 @@ class SpedView(ft.Column):
     def __init__(self, page: ft.Page):
         super().__init__()
         self.page_instance = page
-        self.file_picker = ft.FilePicker()
+        # self.file_picker = ft.FilePicker() # Temporarily disabled due to client error
         self.expand = True
 
         # State
@@ -19,7 +19,7 @@ class SpedView(ft.Column):
         self.content_area = ft.Container(expand=True, padding=20)
 
         self.controls = [
-            self.file_picker,  # Add file_picker directly to controls tree
+            # self.file_picker,  # Add file_picker directly to controls tree
             ft.Container(
                 content=self.tabs_row,
                 border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.GREY_300))
@@ -172,6 +172,7 @@ class SpedView(ft.Column):
     def create_sped_contribuicoes_content(self):
         # We need a reference to the log area to update it
         self.sped_status_text = ft.Text("Aguardando arquivo...", color=ft.Colors.GREY)
+        self.file_path_input = ft.TextField(label="Caminho do arquivo SPED (.txt)", width=500)
 
         return ft.Column(
             controls=[
@@ -179,10 +180,11 @@ class SpedView(ft.Column):
                 ft.Divider(),
                 ft.Row(
                     controls=[
+                        self.file_path_input,
                         ft.ElevatedButton(
-                            "Enviar Arquivos",
-                            icon=ft.Icons.UPLOAD_FILE,
-                            on_click=self.pick_file_and_process
+                            "Processar Arquivo",
+                            icon=ft.Icons.PLAY_ARROW,
+                            on_click=self.process_manual_file
                         ),
                     ]
                 ),
@@ -199,32 +201,24 @@ class SpedView(ft.Column):
             ]
         )
 
-    async def pick_file_and_process(self, e):
-        """
-        Async handler for file picking and processing.
-        """
-        # 1. Pick Files
-        # Note: FilePicker must be in page overlay to work.
-        try:
-            result = await self.file_picker.pick_files(
-                allow_multiple=False,
-                allowed_extensions=["txt"]
-            )
-
-            # 2. Process Files if any selected
-            if result and result.files:
-                self.process_selected_file(result.files[0])
-        except Exception as ex:
-             # Just in case pick_files fails (e.g. not added to page yet)
-             print(f"Error picking file: {ex}")
-             self.sped_status_text.value = f"Erro ao abrir seletor de arquivos: {ex}"
+    def process_manual_file(self, e):
+        filepath = self.file_path_input.value
+        if not filepath:
+             self.sped_status_text.value = "Por favor, insira o caminho do arquivo."
              self.sped_status_text.color = ft.Colors.RED
              self.sped_status_text.update()
+             return
 
-    def process_selected_file(self, file_obj):
-        filepath = file_obj.path
-        filename = file_obj.name
+        if not os.path.exists(filepath):
+             self.sped_status_text.value = "Arquivo não encontrado."
+             self.sped_status_text.color = ft.Colors.RED
+             self.sped_status_text.update()
+             return
 
+        filename = os.path.basename(filepath)
+        self.process_file_action(filepath, filename)
+
+    def process_file_action(self, filepath, filename):
         self.sped_status_text.value = f"Processando arquivo: {filename}..."
         self.sped_status_text.update()
 
