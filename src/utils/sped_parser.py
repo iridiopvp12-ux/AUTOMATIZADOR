@@ -77,19 +77,24 @@ def process_sped_file(filepath):
                     # parts[0] is empty string if line starts with |
                     # parts[1] is 'C170'
 
+                    # Base Fields
+                    vl_item = _to_float(parts[7])
                     cfop = parts[11]
+                    vl_icms = _to_float(parts[15])
+                    vl_ipi = _to_float(parts[24])
 
-                    # PIS
-                    cst_pis = parts[20]
-                    vl_bc_pis = _to_float(parts[21])
-                    aliq_pis = _to_float(parts[22])
-                    vl_pis = _to_float(parts[25])
+                    # PIS (Indices based on EFD-Contribuições with IPI block)
+                    # 20: CST_IPI, ..., 24: VL_IPI, 25: CST_PIS
+                    cst_pis = parts[25]
+                    vl_bc_pis = _to_float(parts[26])
+                    aliq_pis = _to_float(parts[27])
+                    vl_pis = _to_float(parts[30])
 
                     # COFINS
-                    cst_cofins = parts[26]
-                    vl_bc_cofins = _to_float(parts[27])
-                    aliq_cofins = _to_float(parts[28])
-                    vl_cofins = _to_float(parts[31])
+                    cst_cofins = parts[31]
+                    vl_bc_cofins = _to_float(parts[32])
+                    aliq_cofins = _to_float(parts[33])
+                    vl_cofins = _to_float(parts[36])
 
                     bloco = 'C' # Hardcoded for C170
 
@@ -97,10 +102,14 @@ def process_sped_file(filepath):
 
                     if key not in data_map:
                         data_map[key] = {
+                            'Valor_Item': 0.0, 'Valor_ICMS': 0.0, 'Valor_IPI': 0.0,
                             'Base_PIS': 0.0, 'Valor_PIS': 0.0,
                             'Base_COFINS': 0.0, 'Valor_COFINS': 0.0
                         }
 
+                    data_map[key]['Valor_Item'] += vl_item
+                    data_map[key]['Valor_ICMS'] += vl_icms
+                    data_map[key]['Valor_IPI'] += vl_ipi
                     data_map[key]['Base_PIS'] += vl_bc_pis
                     data_map[key]['Valor_PIS'] += vl_pis
                     data_map[key]['Base_COFINS'] += vl_bc_cofins
@@ -119,6 +128,9 @@ def process_sped_file(filepath):
         row = {
             'Bloco': bloco,
             'CFOP': cfop,
+            'Valor_Item': values['Valor_Item'],
+            'Valor_ICMS': values['Valor_ICMS'],
+            'Valor_IPI': values['Valor_IPI'],
             'CST_PIS': cst_pis,
             'Base_PIS': values['Base_PIS'],
             'Aliq_PIS': aliq_pis,
