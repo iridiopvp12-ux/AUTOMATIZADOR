@@ -12,6 +12,7 @@ from src.utils.sped_filter_logic import SpedFilterLogic
 from src.utils.keys_extractor_logic import KeysExtractorLogic
 from src.utils.sieg_manager import SiegManager
 from src.utils.difal_logic import DifalLogic 
+from src.utils.xml_to_excel_logic import XmlToExcelLogic
 
 class SpedView(ft.Column):
     def __init__(self, page: ft.Page):
@@ -24,6 +25,7 @@ class SpedView(ft.Column):
         self.keys_logic = KeysExtractorLogic()
         self.sieg_manager = SiegManager()
         self.difal_logic = DifalLogic()
+        self.xml_excel_logic = XmlToExcelLogic()
 
         # --- Configuração dos File Pickers (Diálogos de Arquivo) ---
         self.open_file_picker = ft.FilePicker(on_result=self.on_open_file_result)
@@ -124,6 +126,7 @@ class SpedView(ft.Column):
                     self.create_card("SPED Contribuições", ft.Icons.TABLE_CHART, "Gerar planilha fiscal.", self.open_contrib_tab),
                     self.create_card("Filtro por Data", ft.Icons.DATE_RANGE, "Filtrar período do SPED.", self.open_filter_tab),
                     self.create_card("Extrator de Chaves", ft.Icons.VPN_KEY, "Extrair e Baixar XMLs.", self.open_keys_tab),
+                    self.create_card("XML para Excel", ft.Icons.GRID_ON, "Converter XMLs para Excel.", self.open_xml_excel_tab),
                     self.create_card("Relatório DIFAL", ft.Icons.MONETIZATION_ON, "Extrair totais de DIFAL/FCP.", self.open_difal_tab),
                 ])
             ]
@@ -174,6 +177,10 @@ class SpedView(ft.Column):
             self.difal_folder_input.value = path
             self.difal_folder_input.update()
 
+        elif self.current_action == 'xml_excel_folder':
+            self.xml_excel_folder_input.value = path
+            self.xml_excel_folder_input.update()
+
     def on_save_file_result(self, e: ft.FilePickerResultEvent):
         if not e.path: return
         output_path = e.path
@@ -183,6 +190,9 @@ class SpedView(ft.Column):
             
         elif self.current_action == 'keys':
             self.run_keys_logic_thread(output_path)
+
+        elif self.current_action == 'save_xml_excel':
+            self.run_xml_excel_thread(output_path)
             
         elif self.current_action == 'save_difal':
             # Verifica o checkbox de detalhes
@@ -477,7 +487,66 @@ class SpedView(ft.Column):
         threading.Thread(target=task).start()
 
     # =========================================================================
-    # ABA 4: RELATÓRIO DIFAL / FCP (COMPLETA)
+    # ABA 4: XML PARA EXCEL
+    # =========================================================================
+    def open_xml_excel_tab(self, e):
+        label = "XML para Excel"
+        if label not in self.open_tabs:
+            self.open_tabs.append(label)
+
+            self.xml_excel_folder_input = ft.TextField(label="Pasta com XMLs", width=400)
+            self.xml_excel_status = ft.Text("Aguardando...", color=ft.Colors.GREY)
+
+            self.tab_contents[label] = ft.Column([
+                ft.Text(label, size=24, weight="bold"),
+                ft.Divider(),
+                ft.Row([
+                    self.xml_excel_folder_input,
+                    ft.IconButton(ft.Icons.FOLDER, on_click=lambda _: self.request_folder_xml_excel())
+                ]),
+                ft.ElevatedButton("Converter para Excel", icon=ft.Icons.SAVE_ALT, on_click=self.pre_process_xml_excel),
+                ft.Divider(),
+                self.xml_excel_status
+            ])
+        self.switch_tab(label)
+
+    def request_folder_xml_excel(self):
+        self.current_action = 'xml_excel_folder'
+        self.folder_picker.get_directory_path()
+
+    def pre_process_xml_excel(self, e):
+        if not self.xml_excel_folder_input.value or not os.path.exists(self.xml_excel_folder_input.value):
+            self.xml_excel_status.value = "Pasta inválida."
+            self.xml_excel_status.color = "red"
+            self.xml_excel_status.update()
+            return
+
+        self.pending_input_path = self.xml_excel_folder_input.value
+        self.current_action = 'save_xml_excel'
+
+        self.save_file_picker.save_file(
+            dialog_title="Salvar Planilha Excel",
+            file_name=f"RELATORIO_XML_{datetime.now().strftime('%d%m%Y')}.xlsx",
+            allowed_extensions=["xlsx"]
+        )
+
+    def run_xml_excel_thread(self, output_path):
+        self.xml_excel_status.value = "Processando XMLs..."
+        self.xml_excel_status.color = "blue"
+        self.xml_excel_status.update()
+
+        input_path = self.pending_input_path
+
+        def task():
+            success, msg = self.xml_excel_logic.xml_folder_to_excel(input_path, output_path)
+            self.xml_excel_status.value = msg
+            self.xml_excel_status.color = "green" if success else "red"
+            self.xml_excel_status.update()
+
+        threading.Thread(target=task).start()
+
+    # =========================================================================
+    # ABA 5: RELATÓRIO DIFAL / FCP (COMPLETA)
     # =========================================================================
     def open_difal_tab(self, e):
         label = "Relatório DIFAL"
