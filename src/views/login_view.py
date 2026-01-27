@@ -6,12 +6,18 @@ class LoginView(ft.Container):
     def __init__(self, page: ft.Page, on_login_success):
         super().__init__()
         self.main_page = page
-        self.on_login_success = on_login_success
+        self.on_login_success = on_login_success # Esta função vem do main.py
         self.alignment = ft.Alignment(0, 0)
         self.expand = True
 
         self.username_input = ft.TextField(label="Usuário", width=300)
-        self.password_input = ft.TextField(label="Senha", password=True, can_reveal_password=True, width=300)
+        self.password_input = ft.TextField(
+            label="Senha", 
+            password=True, 
+            can_reveal_password=True, 
+            width=300, 
+            on_submit=self.handle_login
+        )
         self.error_text = ft.Text(color="red")
 
         self.content = ft.Column(
@@ -33,9 +39,7 @@ class LoginView(ft.Container):
                                 ft.ElevatedButton(
                                     "Entrar",
                                     width=300,
-                                    style=ft.ButtonStyle(
-                                        padding=20,
-                                    ),
+                                    style=ft.ButtonStyle(padding=20),
                                     on_click=self.handle_login
                                 )
                             ]
@@ -45,19 +49,21 @@ class LoginView(ft.Container):
             ]
         )
 
+    # --- MÉTODO CORRIGIDO (SEM ASYNC) ---
     def handle_login(self, e):
         username = self.username_input.value
         password = self.password_input.value
 
         if not username or not password:
             self.error_text.value = "Por favor, preencha todos os campos."
-            self.update()
+            self.update() # Usa update() normal
             return
 
+        # Busca o usuário no banco (síncrono)
         user = get_user_by_username(username)
 
+        # Valida senha
         if user and verify_password(user[2], password):
-            # user structure: (id, username, password_hash, is_admin, permissions)
             user_data = {
                 "id": user[0],
                 "username": user[1],
@@ -65,11 +71,11 @@ class LoginView(ft.Container):
                 "permissions": user[4]
             }
 
-            # Start Logging
             start_session_log(username)
             log_action("Login realizado com sucesso.")
 
+            # Chama a função de sucesso SEM await
             self.on_login_success(user_data)
         else:
             self.error_text.value = "Usuário ou senha inválidos."
-            self.update()
+            self.update() # Usa update() normal

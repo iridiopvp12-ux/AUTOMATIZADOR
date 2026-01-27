@@ -3,19 +3,14 @@ import os
 
 def process_sped_file(filepath):
     """
-    Reads a SPED Contribuições TXT file and aggregates data by CST and CFOP.
-    Returns a DataFrame ready for the report.
+    Lê um arquivo SPED (TXT) e agrega dados por Bloco, CFOP e CST.
+    Suporta Blocos C, D e A.
+    Retorna um DataFrame pronto para o relatório.
     """
-
-    # We are interested in items that contribute to PIS/COFINS.
-    # Typically found in block C (C170 items), D (D100/D500 items), etc.
-    # For this simplified implementation, we will focus on C170 (Items of NFe/NFCe)
-    # and maybe C190 if C170 is absent (though C190 is consolidation).
-    # The user request specifically mentioned "SPED Contribuições" and the image shows "REGISTROS FISCAIS".
-
-    # Structure of relevant list:
-    # { (Bloco, CFOP, CST_PIS, CST_COFINS, Aliq_PIS, Aliq_COFINS): { 'Base_PIS': 0, 'Valor_PIS': 0, 'Base_COFINS': 0, 'Valor_COFINS': 0 } }
-
+    
+    # Estrutura do mapa de dados:
+    # Chave: (Bloco, CFOP, CST_PIS, Aliq_PIS, CST_COFINS, Aliq_COFINS)
+    # Valor: Dicionário com somatórios
     data_map = {}
 
     try:
@@ -30,61 +25,23 @@ def process_sped_file(filepath):
 
                 reg_type = parts[1]
 
-                # We need to capture context from Parent records (C100) if needed (like Date),
-                # but for pure consolidation by CST/CFOP, C170 is usually self-contained regarding values,
-                # EXCEPT it links to C100.
-
-                # C170: Itens do Documento (Código 01, 1B, 04 and 55)
+                # ==========================================================
+                # BLOCO C: C170 (Itens de Documento)
+                # ==========================================================
                 if reg_type == 'C170':
-                    # Layout Guia Prático EFD-Contribuições:
-                    # 1: REG (C170)
-                    # 2: NUM_ITEM
-                    # 3: COD_ITEM
-                    # 4: DESCR_COMPL
-                    # 5: QTD
-                    # 6: UNID
-                    # 7: VL_ITEM
-                    # 8: VL_DESC
-                    # 9: IND_MOV
-                    # 10: CST_ICMS
-                    # 11: CFOP
-                    # 12: COD_NAT
-                    # 13: VL_BC_ICMS
-                    # 14: ALIQ_ICMS
-                    # 15: VL_ICMS
-                    # 16: VL_BC_ICMS_ST
-                    # 17: ALIQ_ICMS_ST
-                    # 18: VL_ICMS_ST
-                    # 19: IND_APUR
-                    # 20: CST_PIS
-                    # 21: VL_BC_PIS
-                    # 22: ALIQ_PIS_PERCENTUAL
-                    # 23: QUANT_BC_PIS
-                    # 24: ALIQ_PIS_REAIS
-                    # 25: VL_PIS
-                    # 26: CST_COFINS
-                    # 27: VL_BC_COFINS
-                    # 28: ALIQ_COFINS_PERCENTUAL
-                    # 29: QUANT_BC_COFINS
-                    # 30: ALIQ_COFINS_REAIS
-                    # 31: VL_COFINS
-                    # 32: COD_CTA
-
-                    if len(parts) < 32: # Basic safety check
-                        continue
-
-                    # Extract fields (Index is Field# + 1 usually because split creates empty string at start)
-                    # parts[0] is empty string if line starts with |
-                    # parts[1] is 'C170'
-
-                    # Base Fields
+                    if len(parts) < 32: continue
+                    
+                    # Campos Base
                     vl_item = _to_float(parts[7])
                     cfop = parts[11]
                     vl_icms = _to_float(parts[15])
+                    
+                    # --- NOVO: Captura do ICMS ST (Campo 18 - Índice 18) ---
+                    vl_icms_st = _to_float(parts[18])
+                    
                     vl_ipi = _to_float(parts[24])
 
-                    # PIS (Indices based on EFD-Contribuições with IPI block)
-                    # 20: CST_IPI, ..., 24: VL_IPI, 25: CST_PIS
+                    # PIS (Índices padrão SPED Contribuições)
                     cst_pis = parts[25]
                     vl_bc_pis = _to_float(parts[26])
                     aliq_pis = _to_float(parts[27])
@@ -96,26 +53,81 @@ def process_sped_file(filepath):
                     aliq_cofins = _to_float(parts[33])
                     vl_cofins = _to_float(parts[36])
 
-                    bloco = 'C' # Hardcoded for C170
+                    _add_to_map(data_map, 'C', cfop, cst_pis, aliq_pis, cst_cofins, aliq_cofins,
+                                vl_item, vl_icms, vl_icms_st, vl_ipi,
+                                vl_bc_pis, vl_pis, vl_bc_cofins, vl_cofins)
 
-                    key = (bloco, cfop, cst_pis, aliq_pis, cst_cofins, aliq_cofins)
+                # ==========================================================
+                # BLOCO A: A170 (Itens de Documento - Serviços)
+                # ==========================================================
+                elif reg_type == 'A170':
+                    # A170 tem PIS e COFINS na mesma linha, similar ao C170
+                    # Layout: 1:REG, 5:VL_ITEM, 7:CST_PIS, 8:BC_PIS, 9:ALIQ_PIS, 10:VL_PIS, 
+                    # 11:CST_COFINS, 12:BC_COFINS, 13:ALIQ_COFINS, 14:VL_COFINS
+                    if len(parts) < 15: continue
 
-                    if key not in data_map:
-                        data_map[key] = {
-                            'Valor_Item': 0.0, 'Valor_ICMS': 0.0, 'Valor_IPI': 0.0,
-                            'Base_PIS': 0.0, 'Valor_PIS': 0.0,
-                            'Base_COFINS': 0.0, 'Valor_COFINS': 0.0
-                        }
+                    vl_item = _to_float(parts[5])
+                    cfop = "SERV" # Bloco A geralmente não tem CFOP, usamos um placeholder
+                    
+                    # Bloco A não costuma ter ICMS/IPI
+                    vl_icms = 0.0
+                    vl_icms_st = 0.0
+                    vl_ipi = 0.0
 
-                    data_map[key]['Valor_Item'] += vl_item
-                    data_map[key]['Valor_ICMS'] += vl_icms
-                    data_map[key]['Valor_IPI'] += vl_ipi
-                    data_map[key]['Base_PIS'] += vl_bc_pis
-                    data_map[key]['Valor_PIS'] += vl_pis
-                    data_map[key]['Base_COFINS'] += vl_bc_cofins
-                    data_map[key]['Valor_COFINS'] += vl_cofins
+                    cst_pis = parts[7]
+                    vl_bc_pis = _to_float(parts[8])
+                    aliq_pis = _to_float(parts[9])
+                    vl_pis = _to_float(parts[10])
 
-                # Add other blocks if necessary (D100 etc) in future steps
+                    cst_cofins = parts[11]
+                    vl_bc_cofins = _to_float(parts[12])
+                    aliq_cofins = _to_float(parts[13])
+                    vl_cofins = _to_float(parts[14])
+
+                    _add_to_map(data_map, 'A', cfop, cst_pis, aliq_pis, cst_cofins, aliq_cofins,
+                                vl_item, vl_icms, vl_icms_st, vl_ipi,
+                                vl_bc_pis, vl_pis, vl_bc_cofins, vl_cofins)
+
+                # ==========================================================
+                # BLOCO D: Transportes (D100 -> D101/D105) e Comms (D500 -> D501/D505)
+                # ==========================================================
+                # No Bloco D (Contribuições), os valores costumam estar nos filhos (101/105 ou 501/505)
+                
+                # --- D101 / D501 (PIS) ---
+                elif reg_type in ('D101', 'D501'):
+                    # Layout D101: 2:IND_NAT, 3:VL_ITEM, 4:CST_PIS, 5:BC_PIS, 6:ALIQ, 7:VL_PIS
+                    if len(parts) < 8: continue
+                    
+                    vl_item = _to_float(parts[3])
+                    cfop = "TRANSP" if reg_type == 'D101' else "TELECOM"
+                    
+                    cst_pis = parts[4]
+                    vl_bc_pis = _to_float(parts[5])
+                    aliq_pis = _to_float(parts[6])
+                    vl_pis = _to_float(parts[7])
+                    
+                    # Registramos apenas a parte do PIS, COFINS fica vazio nesta linha
+                    _add_to_map(data_map, 'D', cfop, cst_pis, aliq_pis, None, 0.0,
+                                vl_item, 0.0, 0.0, 0.0,
+                                vl_bc_pis, vl_pis, 0.0, 0.0)
+
+                # --- D105 / D505 (COFINS) ---
+                elif reg_type in ('D105', 'D505'):
+                    # Layout D105: 2:IND_NAT, 3:VL_ITEM, 4:CST_COF, 5:BC_COF, 6:ALIQ, 7:VL_COF
+                    if len(parts) < 8: continue
+                    
+                    vl_item = _to_float(parts[3])
+                    cfop = "TRANSP" if reg_type == 'D105' else "TELECOM"
+                    
+                    cst_cofins = parts[4]
+                    vl_bc_cofins = _to_float(parts[5])
+                    aliq_cofins = _to_float(parts[6])
+                    vl_cofins = _to_float(parts[7])
+                    
+                    # Registramos apenas a parte da COFINS
+                    _add_to_map(data_map, 'D', cfop, None, 0.0, cst_cofins, aliq_cofins,
+                                vl_item, 0.0, 0.0, 0.0,
+                                0.0, 0.0, vl_bc_cofins, vl_cofins)
 
     except Exception as e:
         print(f"Error processing file: {e}")
@@ -130,12 +142,13 @@ def process_sped_file(filepath):
             'CFOP': cfop,
             'Valor_Item': values['Valor_Item'],
             'Valor_ICMS': values['Valor_ICMS'],
+            'Valor_ICMS_ST': values['Valor_ICMS_ST'], # Adicionado
             'Valor_IPI': values['Valor_IPI'],
-            'CST_PIS': cst_pis,
+            'CST_PIS': cst_pis if cst_pis else '-',
             'Base_PIS': values['Base_PIS'],
             'Aliq_PIS': aliq_pis,
             'Valor_PIS': values['Valor_PIS'],
-            'CST_COFINS': cst_cofins,
+            'CST_COFINS': cst_cofins if cst_cofins else '-',
             'Base_COFINS': values['Base_COFINS'],
             'Aliq_COFINS': aliq_cofins,
             'Valor_COFINS': values['Valor_COFINS']
@@ -144,6 +157,28 @@ def process_sped_file(filepath):
 
     df = pd.DataFrame(rows)
     return df
+
+def _add_to_map(data_map, bloco, cfop, cst_pis, aliq_pis, cst_cofins, aliq_cofins,
+                vl_item, vl_icms, vl_icms_st, vl_ipi,
+                vl_bc_pis, vl_pis, vl_bc_cofins, vl_cofins):
+    
+    key = (bloco, cfop, cst_pis, aliq_pis, cst_cofins, aliq_cofins)
+
+    if key not in data_map:
+        data_map[key] = {
+            'Valor_Item': 0.0, 'Valor_ICMS': 0.0, 'Valor_ICMS_ST': 0.0, 'Valor_IPI': 0.0,
+            'Base_PIS': 0.0, 'Valor_PIS': 0.0,
+            'Base_COFINS': 0.0, 'Valor_COFINS': 0.0
+        }
+
+    data_map[key]['Valor_Item'] += vl_item
+    data_map[key]['Valor_ICMS'] += vl_icms
+    data_map[key]['Valor_ICMS_ST'] += vl_icms_st # Soma o novo campo
+    data_map[key]['Valor_IPI'] += vl_ipi
+    data_map[key]['Base_PIS'] += vl_bc_pis
+    data_map[key]['Valor_PIS'] += vl_pis
+    data_map[key]['Base_COFINS'] += vl_bc_cofins
+    data_map[key]['Valor_COFINS'] += vl_cofins
 
 def _to_float(val_str):
     if not val_str:
