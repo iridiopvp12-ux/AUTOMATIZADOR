@@ -89,10 +89,10 @@ def generate_fiscal_report(df: pd.DataFrame, output_path: str):
         ws.cell(row=r_idx+4, column=14, value=row['Valor_COFINS']).number_format = '#,##0.00'
 
     # Auto-adjust column widths
-    for i, col in enumerate(ws.columns, 1):
+    for i in range(1, ws.max_column + 1):
         max_length = 0
         column_letter = get_column_letter(i)
-        for cell in col:
+        for cell in ws[column_letter]:
             try:
                 if cell.value:
                     if len(str(cell.value)) > max_length:

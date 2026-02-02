@@ -2,3 +2,4 @@ flet==0.28.3
 bcrypt
 pandas
 openpyxl
+python-dotenv

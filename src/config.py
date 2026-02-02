@@ -1,9 +1,13 @@
-# src/config.py
+import os
+from dotenv import load_dotenv
 
-# Coloque suas credenciais aqui
-SIEG_API_KEY = "Bq1dEkKD2SbYkmw_RFFpP9CbM1xUrlan4IqC-jsOzvQ"
-SIEG_EMAIL = "andre@massucatti.cnt.br"
+# Load environment variables from .env file
+load_dotenv()
+
+# Credenciais
+SIEG_API_KEY = os.getenv("SIEG_API_KEY", "")
+SIEG_EMAIL = os.getenv("SIEG_EMAIL", "")
 
 # Configurações de Download
-DOWNLOAD_TIMEOUT = 30  # Aumentamos para 30 segundos para evitar o erro de TimeOut
-MAX_RETRIES = 3        # Tenta 3 vezes antes de desistir
+DOWNLOAD_TIMEOUT = int(os.getenv("DOWNLOAD_TIMEOUT", "30"))
+MAX_RETRIES = int(os.getenv("MAX_RETRIES", "3"))
